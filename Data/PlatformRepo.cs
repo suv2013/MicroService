@@ -35,10 +35,9 @@ namespace PlatformService.Data
             return (Platform)Enumerable.Empty<Platform>();
         }
 
-            public IEnumerable<Platform> GetPlatforms()
+        public IEnumerable<Platform> GetPlatforms()
         { 
-            return _context.Platforms.ToList();
-            
+            return _context.Platforms.ToList();            
         }
 
         public bool SaveChanges()
