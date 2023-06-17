@@ -22,11 +22,13 @@ namespace PlatformService.Data
             _context.Platforms.Add(platform);
         }
 
-        public Platform GetPlatformById(int id)
+        public Platform GetPlatformById(int? id)
         {
-            if (id > 0)
+            if (id != null && id > 0)
             {
+#pragma warning disable CS8603 // Possible null reference return.
                 return _context.Platforms.FirstOrDefault(p => p.Id == id);
+#pragma warning restore CS8603 // Possible null reference return.
 
             }
 
