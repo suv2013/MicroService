@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using PlatformService.Data;
 using PlatformService.DTOS;
 using PlatformService.Models;
+using PlatformService.SyncDataServices.Http;
 
 namespace PlatformService.Controllers
 {
@@ -19,12 +20,14 @@ namespace PlatformService.Controllers
         private readonly AppDbContext _context;
         private readonly IPlatformRepo _repository;
         private readonly IMapper _mapper;
+        private readonly ICommandDataClient _commandDataClient;
 
-        public PlatformsController(AppDbContext context,IPlatformRepo repository, IMapper mapper)
+        public PlatformsController(AppDbContext context,IPlatformRepo repository, IMapper mapper, ICommandDataClient commandDataClient)
         {
             _context = context;
             _repository = repository;
             _mapper = mapper;
+            _commandDataClient = commandDataClient;
         }
 
         // GET: api/Platforms
@@ -135,7 +138,7 @@ namespace PlatformService.Controllers
 
         [HttpPost]
         [Route("[action]")]
-        public ActionResult<PlatformReadDTO> CreatePlatForm(PlatformCreateDTO platformCreateDTO)
+        public async Task<ActionResult<PlatformReadDTO>> CreatePlatForm(PlatformCreateDTO platformCreateDTO)
         {
             if(_repository == null && _mapper == null)
             {
@@ -143,12 +146,23 @@ namespace PlatformService.Controllers
             }
 
             var platformModel = _mapper.Map<Platform>(platformCreateDTO);
+
             if (platformModel != null)
             {
                 _repository.CreatePlatform(platformModel);
                 _repository.SaveChanges();
 
                 var platformReadDTO = _mapper.Map<PlatformReadDTO>(platformModel);
+
+                try
+                {
+                    await _commandDataClient.SendPlatformToCommand(platformReadDTO);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Could not send Synchronously: {ex.ToString()}");
+                }
+
                 var response = CreatedAtAction(nameof(CreatePlatForm), new { platformReadDTO.Id, platformReadDTO });
                 return response;
             }
